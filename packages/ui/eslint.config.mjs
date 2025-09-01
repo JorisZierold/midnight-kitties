@@ -28,6 +28,7 @@ import plugin from '@typescript-eslint/eslint-plugin';
 import parser from '@typescript-eslint/parser';
 import pluginPrettier from 'eslint-plugin-prettier';
 
+/** @type {import('eslint').Linter.Config[]} */
 export default [
   js.configs.recommended,
   {

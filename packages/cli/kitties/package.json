@@ -4,19 +4,16 @@
   "license": "GPL-3.0",
   "private": true,
   "type": "module",
-
   "types": "dist/index.d.ts",
-
   "dependencies": {
     "@midnight-ntwrk/kitties-contract": "*",
-    "@repo/kitties-api": "^0.0.1"
+    "@repo/kitties-api": "^0.0.1",
+    "midnight-contracts": "git+https://riusricardo@github.com/riusricardo/midnight-contracts"
   },
-
   "devDependencies": {
     "eslint": "^9.28.0",
     "typescript": "^5.8.3"
   },
-
   "scripts": {
     "build": "rm -rf dist && tsc --project tsconfig.build.json",
     "lint": "eslint src",
