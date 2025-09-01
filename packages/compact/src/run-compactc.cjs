@@ -1,48 +1,64 @@
 #!/usr/bin/env node
 
-/**
- * @file run-compactc.cjs
- * @author Ricardo Rius
- * @license GPL-3.0
- *
- * Copyright (C) 2025 Ricardo Rius
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * DISCLAIMER: This software is provided "as is" without any warranty.
- * Use at your own risk. The author assumes no responsibility for any
- * damages or losses arising from the use of this software.
- */
-
 const childProcess = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 const [_node, _script, ...args] = process.argv;
-const COMPACT_HOME_ENV = process.env.COMPACT_HOME;
 
-let compactPath;
-if (COMPACT_HOME_ENV != null) {
-  compactPath = COMPACT_HOME_ENV;
-  console.log(`'COMPACT_HOME' env variable is set; using Compact from ${compactPath}`);
-} else {
-  throw new Error(`'COMPACT_HOME' environment variable is not set`);
+// Function to find the compact binary
+function findCompactBinary() {
+  // First check if compact is in PATH
+  try {
+    const result = childProcess.execSync('which compact', { encoding: 'utf8' }).trim();
+    if (result && fs.existsSync(result)) {
+      return result;
+    }
+  } catch (error) {
+    // compact not found in PATH, continue searching
+  }
+
+  // Check common install locations based on the new installer
+  const homeDir = os.homedir();
+  const possiblePaths = [
+    // XDG_BIN_HOME
+    process.env.XDG_BIN_HOME && path.join(process.env.XDG_BIN_HOME, 'compact'),
+    // XDG_DATA_HOME/../bin
+    process.env.XDG_DATA_HOME && path.join(process.env.XDG_DATA_HOME, '..', 'bin', 'compact'),
+    // $HOME/.local/bin (most common)
+    path.join(homeDir, '.local', 'bin', 'compact'),
+    // Legacy COMPACT_HOME support (if still set)
+    process.env.COMPACT_HOME && path.join(process.env.COMPACT_HOME, 'compact'),
+    process.env.COMPACT_HOME && path.join(process.env.COMPACT_HOME, 'compactc'), // old binary name
+  ].filter(Boolean);
+
+  for (const compactPath of possiblePaths) {
+    if (fs.existsSync(compactPath)) {
+      return compactPath;
+    }
+  }
+
+  return null;
 }
 
+// Find the compact binary
+const compactPath = findCompactBinary();
+
+if (!compactPath) {
+  console.error('Error: compact binary not found.');
+  console.error('Please ensure compact is installed and available in your PATH.');
+  console.error("You can install it using: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh");
+  process.exit(1);
+}
+
+console.log(`Using compact from: ${compactPath}`);
+
 // yarn runs everything with node...
-const child = childProcess.spawn(path.resolve(compactPath, 'compactc'), args, {
+const child = childProcess.spawn(compactPath, args, {
   stdio: 'inherit'
 });
+
 child.on('exit', (code, signal) => {
   if (code === 0) {
     process.exit(0);
