@@ -94,14 +94,6 @@ constructor() {
 // Kitty DNA and Gender Generation
 // =====================
 
-// Generates unique DNA for a kitty.
-circuit generateDNA(minter: ZswapCoinPublicKey, kittyId: Uint<64>): Field {
-  // In a production implementation, this would use a more secure randomness.
-  // Here, we use a hash of the KittyId, minter, contract address, and a witness random number.
-  const payload = [kittyId, minter.bytes, kernel.self().bytes,  createRandomNumber()];
-  return transientHash<[Uint<64>, Bytes<32>, Bytes<32>, Bytes<32>]>(payload);
-}
-
 // Determines the gender of a new kitty based on the genderSelector flag.
 circuit generateGender(): Gender {
   // Alternate gender for each new kitty.
@@ -120,7 +112,12 @@ circuit generateGender(): Gender {
 export circuit createKitty(): [] {
   const sender = ownPublicKey();
   const kittyId = (allKittiesCount.read() + 1) as Uint<64>;
-  const kittyDna = generateDNA(sender, kittyId);
+  
+  // Generate unique DNA for the kitty
+  // In a production implementation, this would use a more secure randomness.
+  // Here, we use a hash of the KittyId, minter, contract address, and a witness random number.
+  const payload = [kittyId, sender.bytes, kernel.self().bytes, createRandomNumber()];
+  const kittyDna = transientHash<[Uint<64>, Bytes<32>, Bytes<32>, Bytes<32>]>(payload);
 
   // Ensure the kitty does not already exist.
   assert(!tokenExists(kittyId), "Kitty already exists");
